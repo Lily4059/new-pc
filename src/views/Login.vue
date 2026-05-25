@@ -3,7 +3,8 @@
     <div class="auth-shell">
       <header class="auth-header">
         <div class="auth-brand" role="button" tabindex="0" @click="goNav('login')">
-          <span class="auth-brand__badge">login</span>
+          <el-icon class="brand-icon"><Notebook /></el-icon>
+          <span class="brand-name">智慧图书馆</span>
         </div>
 
         <nav class="auth-nav" aria-label="顶部导航">
@@ -17,6 +18,15 @@
 
       <main class="auth-main">
         <section class="auth-hero" aria-hidden="true">
+          <div class="hero-content">
+            <h1 class="hero-title">智慧座位预约系统</h1>
+            <p class="hero-subtitle">让你的每一次学习都井然有序</p>
+            <div class="hero-features">
+              <div class="feature-item"><el-icon><Monitor /></el-icon> 可视化选座</div>
+              <div class="feature-item"><el-icon><Phone /></el-icon> 移动端签到</div>
+              <div class="feature-item"><el-icon><Medal /></el-icon> 信用积分体系</div>
+            </div>
+          </div>
           <div class="auth-hero__img" />
         </section>
 
@@ -47,12 +57,11 @@
           <div class="auth-panel__content" :class="activeTab === 'login' ? 'is-login' : 'is-register'">
             <div class="auth-panel__box">
               <div class="auth-welcome">
-                <div class="auth-welcome__title">{{ activeTab === 'login' ? '欢迎来到' : '欢迎注册' }}</div>
-                <div v-if="activeTab === 'login'" class="auth-welcome__subtitle">图书馆预约系统登录页面</div>
-                <div v-else class="auth-welcome__subline">
-                  <span>已有账号？</span>
-                  <button class="auth-link" type="button" @click="setTab('login')">登录</button>
+                <div class="icon-wrap">
+                  <el-icon class="auth-icon"><UserFilled /></el-icon>
                 </div>
+                <h2 class="title">{{ activeTab === 'login' ? '欢迎回来' : '创建账号' }}</h2>
+                <p class="subtitle">{{ activeTab === 'login' ? '登录以继续使用图书馆服务' : '注册并开始您的智慧学习之旅' }}</p>
               </div>
 
               <el-form
@@ -67,7 +76,7 @@
                 <el-form-item prop="username">
                   <el-input
                     v-model="form.username"
-                    class="auth-input"
+                    class="custom-input"
                     placeholder="请输入你的用户名"
                     :prefix-icon="User"
                     :validate-event="hasTriedSubmit"
@@ -77,7 +86,7 @@
                 <el-form-item prop="password">
                   <el-input
                     v-model="form.password"
-                    class="auth-input"
+                    class="custom-input"
                     type="password"
                     placeholder="请输入您的密码"
                     show-password
@@ -86,27 +95,29 @@
                   />
                 </el-form-item>
 
-                <el-form-item v-if="activeTab === 'register'" prop="confirmPassword">
-                  <el-input
-                    v-model="form.confirmPassword"
-                    class="auth-input"
-                    type="password"
-                    placeholder="请确认您的密码"
-                    show-password
-                    :prefix-icon="Lock"
-                    :validate-event="hasTriedSubmit"
-                  />
-                </el-form-item>
+                <transition name="fade-slide">
+                  <el-form-item v-if="activeTab === 'register'" prop="confirmPassword">
+                    <el-input
+                      v-model="form.confirmPassword"
+                      class="custom-input"
+                      type="password"
+                      placeholder="请确认您的密码"
+                      show-password
+                      :prefix-icon="Lock"
+                      :validate-event="hasTriedSubmit"
+                    />
+                  </el-form-item>
+                </transition>
 
                 <el-form-item class="auth-actions">
                   <el-button
-                    class="auth-submit"
+                    class="submit-btn"
                     :class="{ 'is-register': activeTab === 'register' }"
                     type="primary"
                     :loading="loading"
                     @click="handleSubmit"
                   >
-                    {{ activeTab === 'login' ? '登录' : '注册' }}
+                    {{ activeTab === 'login' ? '登 录' : '注 册' }}
                   </el-button>
                 </el-form-item>
               </el-form>
@@ -114,7 +125,7 @@
               <div v-if="activeTab === 'login'" class="demo-tip">测试账号：test / 123456（纯前端演示）</div>
               <div v-else class="auth-welcome__subline auth-welcome__subline--bottom">
                 <span>已有账号？</span>
-                <button class="auth-link" type="button" @click="setTab('login')">登录</button>
+                <button class="auth-link" type="button" @click="setTab('login')">返回登录</button>
               </div>
             </div>
           </div>
@@ -225,7 +236,13 @@ const handleLogin = async () => {
         userStore.setToken(`local-token-${form.username}`)
         userStore.setUserInfo({ id: localUser.id, name: localUser.username, credit: 100 })
         ElMessage.success('登录成功')
-        router.push('/home')
+        
+        // 检查是否绑定了学号
+        if (!localUser.studentNo) {
+          router.push('/bind-student')
+        } else {
+          router.push('/home')
+        }
         return
       }
 
@@ -237,7 +254,13 @@ const handleLogin = async () => {
         userStore.setToken(res.data.data.token)
         userStore.setUserInfo(res.data.data.userInfo)
         ElMessage.success('登录成功')
-        router.push('/home')
+        
+        // 检查是否绑定了学号
+        if (!res.data.data.userInfo?.studentNo) {
+          router.push('/bind-student')
+        } else {
+          router.push('/home')
+        }
         return
       }
 
@@ -300,49 +323,52 @@ const handleSubmit = async () => {
   display: flex;
   justify-content: center;
   align-items: center;
-  background: #ffffff;
+  background: linear-gradient(135deg, #f5f7fa 0%, #e4e7ed 100%);
   padding: 24px;
   box-sizing: border-box;
 }
 
 .auth-shell {
-  width: min(1100px, 100%);
-  border: 2px solid #7ea0ff;
-  border-radius: 8px;
+  width: min(1000px, 100%);
+  border-radius: 16px;
   background: #fff;
-  box-shadow: 0 10px 30px rgba(12, 27, 74, 0.08);
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.08);
   overflow: hidden;
+  display: flex;
+  flex-direction: column;
 }
 
 .auth-header {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 14px 18px;
-  border-bottom: 1px solid rgba(126, 160, 255, 0.35);
+  padding: 20px 32px;
+  border-bottom: 1px solid #ebeef5;
 }
 
 .auth-brand {
   display: inline-flex;
   align-items: center;
+  gap: 8px;
   cursor: pointer;
   user-select: none;
 }
 
-.auth-brand__badge {
-  display: inline-flex;
-  align-items: center;
-  padding: 6px 12px;
-  border-radius: 6px;
-  border: 1px solid rgba(126, 160, 255, 0.7);
-  color: #2da44e;
+.brand-icon {
+  font-size: 24px;
+  color: #409eff;
+}
+
+.brand-name {
+  font-size: 20px;
   font-weight: 600;
-  letter-spacing: 0.2px;
+  color: #303133;
+  letter-spacing: 0.5px;
 }
 
 .auth-nav {
   display: flex;
-  gap: 18px;
+  gap: 8px;
   align-items: center;
 }
 
@@ -350,76 +376,134 @@ const handleSubmit = async () => {
   appearance: none;
   border: 0;
   background: transparent;
-  padding: 6px 10px;
+  padding: 8px 16px;
   border-radius: 6px;
-  color: #1f2a44;
+  color: #606266;
   font-size: 14px;
+  font-weight: 500;
   cursor: pointer;
+  transition: all 0.3s;
 }
 
 .auth-nav__item:hover {
-  background: rgba(126, 160, 255, 0.12);
+  background: #f2f6fc;
+  color: #409eff;
 }
 
 .auth-nav__item--active {
-  border: 1px solid rgba(126, 160, 255, 0.75);
+  background: #ecf5ff;
+  color: #409eff;
 }
 
 .auth-main {
   display: flex;
-  min-height: 520px;
+  min-height: 560px;
 }
 
 .auth-hero {
-  flex: 1 1 58%;
-  border-right: 1px solid rgba(126, 160, 255, 0.35);
-  background: #f6f8ff;
+  flex: 1 1 50%;
+  background: linear-gradient(135deg, #ecf5ff 0%, #e1effe 100%);
   display: flex;
   flex-direction: column;
   justify-content: center;
   position: relative;
+  overflow: hidden;
+  padding: 40px;
+}
+
+.hero-content {
+  position: relative;
+  z-index: 2;
+}
+
+.hero-title {
+  font-size: 32px;
+  font-weight: 700;
+  color: #303133;
+  margin: 0 0 16px 0;
+}
+
+.hero-subtitle {
+  font-size: 16px;
+  color: #606266;
+  margin: 0 0 32px 0;
+  line-height: 1.6;
+}
+
+.hero-features {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.feature-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-size: 16px;
+  color: #303133;
+  background: rgba(255, 255, 255, 0.6);
+  padding: 12px 20px;
+  border-radius: 8px;
+  backdrop-filter: blur(4px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.02);
+  transition: transform 0.3s;
+}
+
+.feature-item:hover {
+  transform: translateX(8px);
+}
+
+.feature-item .el-icon {
+  font-size: 20px;
+  color: #409eff;
 }
 
 .auth-hero__img {
-  width: 100%;
-  height: 100%;
-  min-height: 520px;
-  background:
-    linear-gradient(135deg, rgba(126, 160, 255, 0.2), rgba(126, 160, 255, 0.05)),
-    radial-gradient(800px 360px at 30% 30%, rgba(45, 164, 78, 0.18), transparent 55%),
-    radial-gradient(700px 360px at 80% 75%, rgba(42, 117, 255, 0.22), transparent 60%);
+  position: absolute;
+  top: -20%;
+  right: -20%;
+  width: 400px;
+  height: 400px;
+  background: radial-gradient(circle, rgba(64, 158, 255, 0.15) 0%, transparent 70%);
+  border-radius: 50%;
+  z-index: 1;
 }
 
 .auth-panel {
-  flex: 1 1 42%;
-  padding: 18px 22px;
+  flex: 1 1 50%;
+  padding: 40px;
   box-sizing: border-box;
   display: flex;
   flex-direction: column;
+  background: #ffffff;
 }
 
 .auth-panel__switch {
   align-self: flex-end;
   display: inline-flex;
-  border: 1px solid rgba(126, 160, 255, 0.7);
-  border-radius: 999px;
-  padding: 2px;
-  background: rgba(126, 160, 255, 0.08);
+  background: #f0f2f5;
+  border-radius: 20px;
+  padding: 4px;
+  margin-bottom: 24px;
 }
 
 .auth-switch__btn {
   border: 0;
   background: transparent;
-  color: #1f2a44;
-  padding: 6px 16px;
-  border-radius: 999px;
+  color: #606266;
+  padding: 8px 24px;
+  border-radius: 16px;
   cursor: pointer;
-  font-size: 13px;
+  font-size: 14px;
+  font-weight: 500;
+  transition: all 0.3s;
 }
 
 .auth-switch__btn.is-active {
-  background: rgba(126, 160, 255, 0.22);
-  border: 1px solid rgba(126, 160, 255, 0.8);
+  background: #ffffff;
+  color: #409eff;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
 }
 
 .auth-panel__content {
@@ -427,59 +511,117 @@ const handleSubmit = async () => {
   display: flex;
   flex-direction: column;
   justify-content: center;
-  padding: 8px 8px 0;
-}
-
-.auth-panel__content.is-login .auth-panel__box {
-  background: rgba(126, 160, 255, 0.08);
-}
-
-.auth-panel__content.is-register .auth-panel__box {
-  background: rgba(45, 164, 78, 0.08);
 }
 
 .auth-panel__box {
-  width: min(380px, 100%);
+  width: 100%;
+  max-width: 360px;
   margin: 0 auto;
-  padding: 16px 18px 14px;
-  border: 1px solid rgba(126, 160, 255, 0.45);
-  border-radius: 8px;
-  box-sizing: border-box;
 }
 
 .auth-welcome {
   text-align: center;
-  margin-bottom: 18px;
+  margin-bottom: 32px;
 }
 
-.auth-welcome__title {
-  font-size: 18px;
-  font-weight: 700;
-  color: #1f2a44;
-  line-height: 1.25;
+.icon-wrap {
+  width: 56px;
+  height: 56px;
+  background: #ecf5ff;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto 16px;
 }
 
-.auth-welcome__subtitle {
-  font-size: 18px;
-  font-weight: 700;
-  color: #1f2a44;
-  line-height: 1.25;
+.auth-icon {
+  font-size: 28px;
+  color: #409eff;
+}
+
+.auth-panel__content.is-register .icon-wrap {
+  background: #f0f9eb;
+}
+
+.auth-panel__content.is-register .auth-icon {
+  color: #67c23a;
+}
+
+.title {
+  font-size: 24px;
+  font-weight: 600;
+  color: #303133;
+  margin: 0 0 8px 0;
+}
+
+.subtitle {
+  font-size: 14px;
+  color: #909399;
+  margin: 0;
+}
+
+.auth-form {
+  width: 100%;
+}
+
+.custom-input :deep(.el-input__wrapper) {
+  border-radius: 8px;
+  box-shadow: 0 0 0 1px #dcdfe6 inset;
+  padding: 4px 12px;
+  transition: all 0.3s;
+}
+
+.custom-input :deep(.el-input__wrapper.is-focus) {
+  box-shadow: 0 0 0 1px #409eff inset;
+}
+
+.custom-input :deep(.el-input__inner) {
+  height: 36px;
+}
+
+.auth-actions {
+  margin-top: 32px;
+  margin-bottom: 0;
+}
+
+.submit-btn {
+  width: 100%;
+  height: 44px;
+  border-radius: 8px;
+  font-size: 16px;
+  font-weight: 500;
+  transition: all 0.3s;
+}
+
+.submit-btn.is-register {
+  background-color: #67c23a;
+  border-color: #67c23a;
+}
+
+.submit-btn.is-register:hover {
+  background-color: #85ce61;
+  border-color: #85ce61;
+}
+
+.demo-tip {
+  margin-top: 16px;
+  font-size: 13px;
+  color: #909399;
+  text-align: center;
 }
 
 .auth-welcome__subline {
-  margin-top: 10px;
-  font-size: 13px;
-  color: rgba(31, 42, 68, 0.75);
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  justify-content: center;
+  font-size: 14px;
+  color: #606266;
 }
 
 .auth-welcome__subline--bottom {
   display: flex;
   justify-content: center;
-  margin-top: 10px;
+  align-items: center;
+  gap: 8px;
+  margin-top: 24px;
 }
 
 .auth-link {
@@ -487,84 +629,48 @@ const handleSubmit = async () => {
   border: 0;
   background: transparent;
   padding: 0;
-  color: #2a75ff;
-  font-size: 13px;
-  cursor: pointer;
-  text-decoration: underline;
-  text-underline-offset: 3px;
-}
-
-.auth-form {
-  width: 100%;
-  margin: 0;
-}
-
-.auth-actions :deep(.el-form-item__content) {
-  justify-content: center;
-}
-
-.auth-submit {
-  width: 100%;
-  height: 44px;
-  border-radius: 6px;
-}
-
-.auth-submit.is-register {
-  background: #88a2d8;
-  border-color: #88a2d8;
-}
-
-.auth-submit.is-register:hover,
-.auth-submit.is-register:focus-visible {
-  background: #7c96cf;
-  border-color: #7c96cf;
-}
-
-.auth-input :deep(.el-input__wrapper) {
-  border-radius: 0;
-  box-shadow: none;
-  border: 1px solid rgba(126, 160, 255, 0.75);
-  padding: 0 12px;
-  height: 44px;
-}
-
-.auth-input :deep(.el-input__prefix) {
-  color: rgba(31, 42, 68, 0.55);
-}
-
-.auth-input :deep(.el-input__inner) {
+  color: #409eff;
   font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: color 0.3s;
 }
 
-.auth-form :deep(.el-form-item) {
-  margin-bottom: 18px;
+.auth-link:hover {
+  color: #66b1ff;
 }
 
-.auth-form :deep(.el-form-item__error) {
-  position: static;
-  padding-top: 6px;
+/* Transitions */
+.fade-slide-enter-active,
+.fade-slide-leave-active {
+  transition: all 0.3s ease;
 }
 
-.demo-tip {
-  margin-top: 10px;
-  font-size: 12px;
-  color: rgba(31, 42, 68, 0.6);
-  text-align: center;
+.fade-slide-enter-from,
+.fade-slide-leave-to {
+  opacity: 0;
+  transform: translateY(-10px);
 }
 
-@media (max-width: 980px) {
+@media (max-width: 768px) {
   .auth-nav {
     display: none;
   }
+  
   .auth-main {
     flex-direction: column;
   }
+  
   .auth-hero {
-    border-right: 0;
-    border-bottom: 1px solid rgba(126, 160, 255, 0.35);
+    padding: 32px 24px;
   }
-  .auth-hero__img {
-    min-height: 240px;
+  
+  .auth-panel {
+    padding: 32px 24px;
+  }
+  
+  .hero-title {
+    font-size: 24px;
   }
 }
 </style>
